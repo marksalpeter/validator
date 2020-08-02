@@ -1,4 +1,4 @@
-package validate
+package validator
 
 import (
 	"encoding"
@@ -53,7 +53,7 @@ var DefaultRules = Rules{
 	"xor":      XOR,
 	"or":       OR,
 	"and":      AND,
-	// TODO: create and add lt, gt, lte, and gte
+	// TODO: create and add neq, lt, gt, lte, and gte
 }
 
 // Required returns an error if the filed contains the zero value of the type or nil.
@@ -76,7 +76,7 @@ func Required(ps *RuleParams) error {
 //
 // Example
 //  type Struct struct {
-//    Field  string `json:"field" validate:"empty || email"` // 'field' must be a valid email address or not set at all
+//    Field  string `json:"field" validate:"empty | email"` // 'field' must be a valid email address or not set at all
 //  }
 //
 func Empty(ps *RuleParams) error {

@@ -1,4 +1,4 @@
-// Package validate validates the fields of structs by applying the rules embeded in a fields "validate" tag to the value of that field.
+// Package validator validates the fields of structs by applying the rules embeded in a fields "validate" tag to the value of that field.
 // It is designed to return plain english error messages that refer to field names by their json key.
 // These validation error messages are intended to be presented to the outside world.
 //
@@ -26,7 +26,7 @@
 //  }
 //
 //
-package validate
+package validator
 
 import (
 	"fmt"
