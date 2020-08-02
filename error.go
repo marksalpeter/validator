@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"runtime"
-	"strings"
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -82,17 +80,4 @@ func errorTemplate(tag language.Tag, str string, context interface{}) error {
 		return err
 	}
 	return errors.New(bs.String())
-}
-
-var debug = false
-
-// ierrorf formats the internal error messages related to parsing and executing within the framework
-func ierrorf(v string, is ...interface{}) error {
-	var tag string
-	if debug {
-		_, file, line, _ := runtime.Caller(1)
-		pieces := strings.Split(file, "/")
-		tag = fmt.Sprintf("%s:%d: ", pieces[len(pieces)-1], line)
-	}
-	return fmt.Errorf(tag+v, is...)
 }

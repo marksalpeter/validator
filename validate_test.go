@@ -8,11 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const verboseLogs = false
+
 func TestLexer(t *testing.T) {
 	types := []tokenType{typeFunction, typeColon, typeSpace, typeString, typeComma, typeSpace, typeNumber, typeSpace, typeAnd, typeSpace, typeFunction, typeSpace, typeAnd, typeSpace, typeFunction, typeSpace, typeOr, typeSpace, typeFunction, typeSpace, typeAnd, typeSpace, typeFunction, typeSpace, typeOr, typeSpace, typeOpenParen, typeFunction, typeSpace, typeAnd, typeSpace, typeFunction, typeCloseParen, typeSpace, typeOr, typeSpace, typeFunction, typeColon, typeSpace, typeString, typeComma, typeSpace, typeNumber, typeSpace, typeAnd, typeSpace, typeFunction, typeColon, typeSpace, typeBool, typeEOF}
 	values := []string{"func", ":", " ", "'param1'", ",", " ", "2", " ", "&", " ", "empty", " ", "&", " ", "i", " ", "|", " ", "one", " ", "&", " ", "two", "  ", "|", " ", "(", "three", " ", "&", " ", "four", ")", "	", "|", " ", "five", ":", " ", "'six'", ",", " ", "02.0", " ", "&", " ", "seven", ":", " ", "false", ""}
 	l := newLexer("func: 'param1', 2 & empty & i | one & two  | (three & four)	| five: 'six', 02.0 & seven: false")
-	l.debug = true
+	l.debug = verboseLogs
 	for i := 0; true; i++ {
 		token := l.Next()
 		if token.typ != types[i] {
@@ -27,40 +29,35 @@ func TestLexer(t *testing.T) {
 			break
 		}
 	}
-	l = newLexer("f & t")
-	for token := l.Next(); token.typ != typeEOF; token = l.Next() {
-		fmt.Printf("%s\n", token)
-		if token.typ == typeError {
-			break
-		}
-	}
 
-	l = newLexer("t & (f | t | f)")
-	for token := l.Next(); token.typ != typeEOF; token = l.Next() {
-		fmt.Printf("%s\n", token)
-		if token.typ == typeError {
-			break
-		}
-	}
-
-	l = newLexer("t & (f | f | t) & t")
-	for token := l.Next(); token.typ != typeEOF; token = l.Next() {
-		fmt.Printf("%s\n", token)
-		if token.typ == typeError {
-			break
-		}
+	for _, s := range []string{
+		"func: param1, 2",
+		"f & t",
+		"t & (f | t | f)",
+		"t & (f | f | t) & t",
+	} {
+		t.Run(s, func(t *testing.T) {
+			l = newLexer(s)
+			for token := l.Next(); token.typ != typeEOF; token = l.Next() {
+				if token.typ == typeError {
+					t.Fatal(token.val)
+					break
+				}
+			}
+		})
 	}
 }
 
 func TestParser(t *testing.T) {
-	debug = true
-
+	parser := newParser()
+	parser.debug = verboseLogs
 	tr := func(ps *RuleParams) error {
 		return nil
 	}
 	fl := func(ps *RuleParams) error {
 		return fmt.Errorf("error called")
 	}
+	var params []string
 	rules := map[string]Rule{
 		"t": tr,
 		"f": fl,
@@ -69,6 +66,29 @@ func TestParser(t *testing.T) {
 		"c": fl,
 		"d": fl,
 		"e": tr,
+		"func": func(ps *RuleParams) error {
+			params = ps.Params
+			return nil
+		},
+	}
+
+	// test function
+	for _, s := range []string{
+		"func: 'hello world', 2",
+	} {
+		if isValid := t.Run(s, func(t *testing.T) {
+			if parsed, err := parser.parse(s, rules); err != nil {
+				t.Fatal(err)
+			} else if err := parsed.execute(&RuleParams{}); err != nil {
+				t.Fatalf("execution failed: %s", err)
+			} else {
+				a := assert.New(t)
+				a.Equal(params, []string{`'hello world'`, `2`})
+			}
+		}); !isValid {
+			t.Fatal("failed")
+			return
+		}
 	}
 
 	// resolves to true
@@ -78,7 +98,7 @@ func TestParser(t *testing.T) {
 		"a & (b | c | d) & e",
 	} {
 		if isValid := t.Run(s, func(t *testing.T) {
-			if parsed, err := parse(s, rules); err != nil {
+			if parsed, err := parser.parse(s, rules); err != nil {
 				t.Fatalf("parse failed: %s", err)
 			} else if err := parsed.execute(&RuleParams{}); err != nil {
 				t.Fatalf("execution failed: %s", err)
@@ -97,7 +117,7 @@ func TestParser(t *testing.T) {
 		"t & (f | f | t) & f",
 	} {
 		if isValid := t.Run(s, func(t *testing.T) {
-			if parsed, err := parse(s, rules); err != nil {
+			if parsed, err := parser.parse(s, rules); err != nil {
 				t.Fatalf("parse failed: %s", err)
 			} else if err := parsed.execute(&RuleParams{}); err == nil {
 				t.Fatal("there should be an error returned")
@@ -118,7 +138,7 @@ func TestParser(t *testing.T) {
 		"t & : f",
 	} {
 		if isValid := t.Run(s, func(t *testing.T) {
-			if _, err := parse(s, rules); err == nil {
+			if _, err := parser.parse(s, rules); err == nil {
 				t.Fatal("should return a parse error")
 			}
 		}); !isValid {
@@ -129,7 +149,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestValidator(t *testing.T) {
-	debug = false
+	debug = verboseLogs
 	if pass := t.Run("test tag name parsing", func(t *testing.T) {
 		// create a rule that always fails
 		rules := Rules{
@@ -227,6 +247,7 @@ func TestValidator(t *testing.T) {
 }
 
 func TestRules(t *testing.T) {
+	debug = verboseLogs
 	if pass := t.Run("required", func(t *testing.T) {
 		var s1 struct {
 			Field string `validate:"required"`
@@ -258,7 +279,6 @@ func TestRules(t *testing.T) {
 			},
 		})
 		a := assert.New(t)
-		t.Log(v.Validate(&s1))
 		a.Nil(v.Validate(&s1))
 		a.EqualError(v.Validate(&s2), `["this will always fail"]`)
 	}) && t.Run("email", func(t *testing.T) {

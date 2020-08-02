@@ -36,6 +36,9 @@ import (
 	"golang.org/x/text/language"
 )
 
+// debug can be set by the test suite to get full verbose logging from the parser
+var debug bool
+
 // DefaultTag is the tage used if Config.Tag is not set
 const DefaultTag = "validate"
 
@@ -72,7 +75,8 @@ func New(cfg ...*Config) Validator {
 	var v validator
 	v.tag = DefaultTag
 	v.rules = DefaultRules
-	v.cache = make(map[string]*node)
+	v.parser = newParser()
+	v.parser.debug = debug
 	if cfg == nil || len(cfg) == 0 {
 		return &v
 	}
@@ -86,9 +90,9 @@ func New(cfg ...*Config) Validator {
 }
 
 type validator struct {
-	tag   string
-	rules Rules
-	cache map[string]*node
+	tag    string
+	rules  Rules
+	parser *parser
 }
 
 // Validate returns an implementation of Validate
@@ -159,7 +163,7 @@ func (v *validator) traverse(tag language.Tag, isSyntaxCheck bool, iRoot, iValue
 				ps.Tag = tag
 
 				// get the parse tree
-				if parsed, err := v.parse(validator); err != nil {
+				if parsed, err := v.parser.parse(validator, v.rules); err != nil {
 					errs.Add(&FieldError{
 						Message: err.Error(),
 					})
@@ -197,17 +201,4 @@ func (v *validator) CheckSyntax(i interface{}) error {
 		out <- v.traverse(language.English, true, iValue, iValue)
 	}()
 	return <-out
-}
-
-func (v *validator) parse(validator string) (*node, error) {
-	// get the cached
-	if parsed, ok := v.cache[validator]; ok {
-		return parsed, nil
-	}
-	parsed, err := parse(validator, v.rules)
-	if err != nil {
-		return nil, err
-	}
-	v.cache[validator] = parsed
-	return parsed, nil
 }
