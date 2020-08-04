@@ -3,24 +3,25 @@
 This is a validation package for golang that returns human readable error messages. Its ideal for validating input data for public facing restful api's. 
 
 It has the following features
-* Combination of validators with logical operators, e.g. `validate:"empty | (name & and:LastName)"`
-* Cross field and cross struct validation, e.g. `validate:"xor:OtherFieldName"`
-* Custom validators, e.g. `DefaultRules["custom"] = func (ps *RuleParams) {...}`
+* Combination of validators with logical operators (e.g. `&`, `|`, `()`)
+* Cross field and cross struct validation (e.g. `firstName and lastName must be set`)
+* Custom validators, e.g. `validator.AddRule("name", func(ps..) error)`
 * Customizable i18n aware error messages using the `golang.org/x/text/message` package
 
 ## How it works
-`validator` uses the `validate` tag on structs to apply various rules and parameters
-### Basic Example
+`Validator` uses `struct` tags to verify data passed in to apis. Use the `validate` tag to apply various `Rule`s that the field must follow (e.g. `validate:"email"`). You can add custom validation rules as necessary by implementing your own `validator.Rule` functions. This package also comes with [several common rules referenced below](#Validation-Rules) such as `number:min,max`, `email`, `password`, etc.
+
+### Example
 ```go
 package main
 
 import "github.com/marksalpeter/validator"
 
 type User struct {
-	FirstName string `validate:"name"`// firstName and lastName must be between 1 and 20 letters each 
-	LastName string `validate:"name"`// numbers and special characters will fail validation 
-	EmailAddress string `validate:"email"` // EmailAddress must be a valid email address
-	PhoneNumber string `validate:"number:11,15"` // PhoneNumber must be 11-15 numbers e.g 15551234567
+	FirstName    string `json:"firstName,omitempty" validate:"name"`           // FirstName cannot contain numbers or special characters
+	LastName     string `json:"lastName,omitempty" validate:"name"`            // LastName cannot contain numbers or special characters
+	EmailAddress string `json:"emailAddress,omitempty" validate:"email"`       // EmailAddress must be a valid email address
+	PhoneNumber  string `json:"phoneNumber,omitempty" validate:"number:11,15"` // PhoneNumber must be 11-15 numbers e.g 15551234567
 }
 
 func main() {
@@ -52,7 +53,7 @@ import "github.com/marksalpeter/validator"
 
 // User can either set name or firstName and lastName
 type User struct {
-	Name      string `json:"name,omitempty" validate:"name | or:FirstName,LastName"` // 
+	Name      string `json:"name,omitempty" validate:"name | or:FirstName,LastName"`
 	FirstName string `json:"firstName,omitempty" validate:"empty | (name & and:LastName)"`
 	LastName  string `json:"lastName,omitempty" validate:"empty | (name & and:FirstName)"`
 }
