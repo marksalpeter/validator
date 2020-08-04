@@ -8,8 +8,8 @@ import (
 
 func ExampleValidator() {
 	type User struct {
-		FirstName    string `json:"firstName,omitempty" validate:"name"`           // firstName and lastName must be between 1 and 20 letters each
-		LastName     string `json:"lastName,omitempty" validate:"name"`            // numbers and special characters will fail validation
+		FirstName    string `json:"firstName,omitempty" validate:"name"`           // FirstName cannot contain numbers or special characters
+		LastName     string `json:"lastName,omitempty" validate:"name"`            // LastName cannot contain numbers or special characters
 		EmailAddress string `json:"emailAddress,omitempty" validate:"email"`       // EmailAddress must be a valid email address
 		PhoneNumber  string `json:"phoneNumber,omitempty" validate:"number:11,15"` // PhoneNumber must be 11-15 numbers e.g 15551234567
 	}

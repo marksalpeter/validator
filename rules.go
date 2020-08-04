@@ -14,6 +14,11 @@ import (
 // Rules are a set of rules that the `Validator` will look up by name in order to appy them to fields in a struct
 type Rules map[string]Rule
 
+// Add adds a rule to the map of rules
+func (rs Rules) Add(name string, rule func(*RuleParams) error) {
+	rs[name] = rule
+}
+
 // Rule is a rule that is applied to a field in a struct
 type Rule func(*RuleParams) error
 
@@ -54,6 +59,11 @@ var DefaultRules = Rules{
 	"or":       OR,
 	"and":      AND,
 	// TODO: create and add neq, lt, gt, lte, and gte
+}
+
+// AddRule adds a rule to the `DefaultRules`
+func AddRule(name string, rule func(*RuleParams) error) {
+	DefaultRules.Add(name, rule)
 }
 
 // Required returns an error if the filed contains the zero value of the type or nil.
@@ -310,7 +320,7 @@ func XOR(ps *RuleParams) error {
 			panic(fmt.Errorf("'%s.%s' is not a valid field", parent.Type().Name(), param))
 		}
 
-		// count every field thatis populated
+		// count every field that is populated
 		if hasValue(fValue) {
 			populated++
 		}

@@ -42,6 +42,20 @@ var debug bool
 // DefaultTag is the tage used if Config.Tag is not set
 const DefaultTag = "validate"
 
+// DefaultValidator is the default validator used by the `Validate` and `CheckSyntax` funcs
+var DefaultValidator = New()
+
+// Validate validates a struct or a slice based on the information passed to the 'validate' tag. based on the 'DefaultRules'
+// The error returned will be in English by default, but thay can be changed to any supported language by passing in the cooresponding language tag
+func Validate(i interface{}, tags ...language.Tag) error {
+	return DefaultValidator.Validate(i, tags...)
+}
+
+// CheckSyntax cycles though all of the validation tags and returns bad syntax errors instead of panicing
+func CheckSyntax(i interface{}) error {
+	return DefaultValidator.CheckSyntax(i)
+}
+
 // Validator validates structs and slices
 type Validator interface {
 	// CheckSyntax cycles though all of the validation tags and returns bad syntax errors instead of panicing
