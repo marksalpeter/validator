@@ -207,12 +207,18 @@ func (v *validator) CheckSyntax(i interface{}) error {
 	go func() {
 		defer close(out)
 		defer func() {
-			if err := recover(); err != nil {
-				out <- fmt.Errorf("%+v", err)
+			if r := recover(); r != nil {
+				if err, ok := r.(error); ok {
+					out <- err
+				} else {
+					out <- fmt.Errorf("%+v", r)
+				}
 			}
 		}()
 		iValue := reflect.ValueOf(i)
-		out <- v.traverse(language.English, true, iValue, iValue)
+		if err := v.traverse(language.English, true, iValue, iValue); err != nil {
+			out <- err
+		}
 	}()
 	return <-out
 }
