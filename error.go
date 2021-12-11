@@ -21,6 +21,12 @@ type FieldErrors []error
 
 // Is implements errors.Is
 func (es FieldErrors) Is(err error) bool {
+	switch err.(type) {
+	case FieldErrors:
+		return true
+	case *FieldErrors:
+		return true
+	}
 	for _, e := range es {
 		if errors.Is(e, err) {
 			return true
@@ -31,6 +37,18 @@ func (es FieldErrors) Is(err error) bool {
 
 // As implements errors.As
 func (es FieldErrors) As(err interface{}) bool {
+	if ptr, ok := err.(*FieldErrors); ok {
+		*ptr = es
+		return true
+	} else if fes, ok := err.(FieldErrors); ok {
+		for i := range fes {
+			if len(es) == i {
+				return true
+			}
+			fes[i] = es[i]
+		}
+		return true
+	}
 	for _, e := range es {
 		if errors.As(e, err) {
 			return true
@@ -66,18 +84,36 @@ func (es *FieldErrors) Add(errs ...error) {
 // FieldError is the error returned when a field rule returns an error
 type FieldError struct {
 	Path    string `json:"path,omitempty"`
-	Message string `json:"message,omitempty"`
+	Message error  `json:"message,omitempty"`
+}
+
+// Is implements errors.Is
+func (fe *FieldError) Is(err error) bool {
+	if _, ok := err.(*FieldError); ok {
+		return true
+	}
+	return errors.Is(fe.Message, err)
+}
+
+// Is implements errors.As
+func (fe *FieldError) As(i interface{}) bool {
+	if e, ok := i.(*FieldError); ok {
+		e.Path = fe.Path
+		e.Message = fe.Message
+		return true
+	}
+	return errors.As(fe.Message, i)
 }
 
 // Error implements errors.Error
 func (fe *FieldError) Error() string {
-	return fe.Message
+	return fe.Message.Error()
 }
 
-// MarshalJSON implments the json.Marshaler interface
+// MarshalJSON implements the json.Marshaler interface
 func (fe *FieldError) MarshalJSON() ([]byte, error) {
 	// TODO: after we have a clean `Path` for each error,
-	//       add a config boolean that renders these a json objects instead
+	//       add a config boolean that renders these as json objects instead
 	return []byte(fmt.Sprintf("\"%s\"", fe.Message)), nil
 }
 

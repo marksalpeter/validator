@@ -62,7 +62,7 @@ type Validator interface {
 	CheckSyntax(interface{}) error
 
 	// Validate validates a struct or a slice based on the information passed to the 'validate' tag.
-	// The error returned will be in English by default, but thay can be changed to Spanish by setting the optional language.Tag.
+	// The error returned will be in English by default, but they can be changed to Spanish by setting the optional language.Tag.
 	Validate(interface{}, ...language.Tag) error
 }
 
@@ -179,12 +179,12 @@ func (v *validator) traverse(tag language.Tag, isSyntaxCheck bool, iRoot, iValue
 				// get the parse tree
 				if parsed, err := v.parser.parse(validator, v.rules); err != nil {
 					errs.Add(&FieldError{
-						Message: err.Error(),
+						Message: err,
 					})
 				} else if err := parsed.execute(&ps); err != nil {
 					if !isSyntaxCheck {
 						errs.Add(&FieldError{
-							Message: err.Error(),
+							Message: err,
 						})
 					}
 				}
