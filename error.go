@@ -16,8 +16,28 @@ type Errors interface {
 	Errors() []error
 }
 
-// FieldErrors implemente Errors
+// FieldErrors are slice of FieldError generate by the rules
 type FieldErrors []error
+
+// Is implements errors.Is
+func (es FieldErrors) Is(err error) bool {
+	for _, e := range es {
+		if errors.Is(e, err) {
+			return true
+		}
+	}
+	return false
+}
+
+// As implements errors.As
+func (es FieldErrors) As(err interface{}) bool {
+	for _, e := range es {
+		if errors.As(e, err) {
+			return true
+		}
+	}
+	return false
+}
 
 // Error implements errors.Error
 func (es FieldErrors) Error() string {
